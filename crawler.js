@@ -29,13 +29,13 @@ try {
 
     // 주기적으로 데이터 전송 (cron 작업)
     let count = 0;
-    cron.schedule('*/5 * * * * *', function() {
+    cron.schedule('*/5 * * * * *', async () => {
       count++;
       // 여기에 cron 작업을 수행하고 데이터를 가져온 후
       // WebSocket을 통해 클라이언트에 데이터 전송
-      const data = `New data from cron job (${count})`;
-      ws.send(data);
-      console.log(data);
+      const text = await fetchCounts('ddadang2');
+      ws.send(text);
+      console.log({text});
     });
   });
 } catch (error) {
@@ -51,6 +51,7 @@ let prevPostCount = null;
 let prevCommentCount = null;
 
 async function fetchCounts(gallogName) {
+
   const urlPost = `https://gallog.dcinside.com/${gallogName}`;
   const headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
@@ -80,46 +81,50 @@ async function fetchCounts(gallogName) {
       commentCount = "댓글 엘리먼트를 찾을 수 없습니다.";
     }
 
+    let text;
     // 이전 값과 비교하여 변경된 경우 로그 출력
     if (prevPostCount !== null && prevCommentCount !== null) {
       if (prevPostCount !== postCount || prevCommentCount !== commentCount) {
         if(prevPostCount!==postCount && prevCommentCount !== commentCount){
-            console.log(`게시글이 ${prevPostCount}개에서 ${postCount}개로 변경되었고, 댓글이 ${prevCommentCount}개에서 ${commentCount}개로 변경되었습니다.`);
+            text = `게시글이 ${prevPostCount}개에서 ${postCount}개로 변경되었고, 댓글이 ${prevCommentCount}개에서 ${commentCount}개로 변경되었습니다.`;
         }else if(prevPostCount!==postCount){
             const newPrevPostCount = +(prevPostCount.replace(/,/g, ''));
             const newPostCount = +(postCount.replace(/,/g, ''));
-            if(newPrevPostCount<newPostCount) console.log(`게시글을 ${newPostCount-newPrevPostCount}개 작성하였습니다.`);
-            if(newPrevPostCount>newPostCount) console.log(`게시글을 ${newPrevPostCount-newPostCount}개 삭제하였습니다.`);
+            if(newPrevPostCount<newPostCount) text = `게시글을 ${newPostCount-newPrevPostCount}개 작성하였습니다.`;
+            if(newPrevPostCount>newPostCount) text = `게시글을 ${newPrevPostCount-newPostCount}개 삭제하였습니다.`;
         }else if(prevCommentCount !== commentCount){
             const newPrevCommentCount = +(prevCommentCount.replace(/,/g, ''));
             const newCommentCount = +(commentCount.replace(/,/g, ''));
-            if(newPrevCommentCount<newCommentCount) console.log(`댓글을 ${newCommentCount-newPrevCommentCount}개 작성하였습니다.`);
-            if(newPrevCommentCount>newCommentCount) console.log(`댓글을 ${newPrevCommentCount-newCommentCount}개 삭제하였습니다.`);
+            if(newPrevCommentCount<newCommentCount) text = `댓글을 ${newCommentCount-newPrevCommentCount}개 작성하였습니다.`;
+            if(newPrevCommentCount>newCommentCount) text = `댓글을 ${newPrevCommentCount-newCommentCount}개 삭제하였습니다.`;
         }
       }
     }
 
-    // 현재 게시글과 댓글 개수 출력
-    console.log(`[${gallogName}] 게시글 개수: ${postCount}개, 댓글 개수: ${commentCount}개`);
-
     // 변경된 정보 업데이트
     prevPostCount = postCount;
     prevCommentCount = commentCount;
+
+    if(text) return text;
+
+    // 현재 게시글과 댓글 개수 출력
+    return `[${gallogName}] 게시글 개수: ${postCount}개, 댓글 개수: ${commentCount}개`;
   } catch (error) {
-    console.log("게시글 및 댓글 수를 가져오는 도중 오류가 발생했습니다:", error.message);
+    console.log("게시글 및 댓글 수를 가져오는 도중 오류가 발생했습니다:", error);
   }
 }
 
-rl.question('게시글과 댓글을 확인할 갤러의 아이디를 입력해 주세요: ', (gallogName) => {
-  rl.close();
-  const interval = setInterval(() => {
-    fetchCounts(gallogName);
-  }, 10000); // 10초마다 실행
+// rl.question('게시글과 댓글을 확인할 갤러의 아이디를 입력해 주세요: ', (gallogName) => {
+//   rl.close();
 
-  // 종료 시 처리
-  rl.on('close', () => {
-    clearInterval(interval);
-    console.log('프로그램을 종료합니다.');
-    process.exit(0);
-  });
-});
+//   const interval = setInterval(() => {
+//     fetchCounts(gallogName);
+//   }, 10000); // 10초마다 실행
+
+//   // 종료 시 처리
+//   rl.on('close', () => {
+//     clearInterval(interval);
+//     console.log('프로그램을 종료합니다.');
+//     process.exit(0);
+//   });
+// });
