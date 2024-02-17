@@ -27,7 +27,7 @@ def fetch_counts(gallog_name):
         else:
             comment_count = "댓글 엘리먼트를 찾을 수 없습니다."
 
-        print(f"게시글 개수: {post_count}개, 댓글 개수: {comment_count}개")
+        print(f"[{gallog_name}] 게시글 개수: {post_count}개, 댓글 개수: {comment_count}개")
     except Exception as e:
         print("게시글 및 댓글 수를 가져오는 도중 오류가 발생했습니다:", e)
 
